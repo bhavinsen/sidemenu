@@ -139,13 +139,13 @@ const Sidemenu = () => {
                             className="h-12 flex gap-3 cursor-pointer items-center truncate  px-6 py-3 text-base text-white outline-none transition duration-300 ease-linear hover:bg-[#3ca3dc] hover:text-white hover:outline-none pl-[3.1rem] relative submenu"
                             onClick={(e) => handleOpenURL(value)}
                           >
-                            <input type="checkbox" id="test1" className='z-50 opacity-0 cursor-pointer' value={value.id}
+                            <input type="checkbox" id={value.id} className='z-50 opacity-0 cursor-pointer' value={value.id}
                               checked={isChecked}
                               onChange={() => {
                                 handleValues(value?.id)
                               }} />
 
-                            <label className='w-full cursor-pointer'>{value?.label}</label>
+                            <label className='w-full cursor-pointer' htmlFor={value.id}>{value?.label}</label>
                             {value?.length > 0 ?
                               <span
                                 className="absolute right-0 ml-auto mr-[0.8rem] transition-transform duration-300 "
