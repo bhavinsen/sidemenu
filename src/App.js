@@ -3,8 +3,8 @@ import Sidemenu from './Components/Sidemenu';
 
 function App() {
   return (
-    <div className="App">
-        <Sidemenu/>
+    <div>
+      <Sidemenu />
     </div>
   );
 }
