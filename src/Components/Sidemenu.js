@@ -1,20 +1,25 @@
-import React, { useEffect, useState } from 'react'
-import Arrow from './assets/icon'
+import React, { useState } from 'react';
+import Arrow from './assets/icon';
 import { Data } from '../data';
 import Contain from './Contain';
+import { AiOutlineAreaChart } from "react-icons/ai";
 
 const Sidemenu = () => {
-  
-  //State
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState('');
   const [url, setUrl] = useState('');
   const [attributeData, setAttributeData] = useState([]);
-  const [checkedItems, setCheckedItems] = useState({}); // Separate state for checked items
+  const [checkedItems, setCheckedItems] = useState({});
+  const [activeItems, setActiveItems] = useState([]);
 
   const handleOpenURL = (value) => {
-    const inputUrl = value?.url
+    const inputUrl = value?.url;
     setUrl(inputUrl);
+    setActiveItems((prevItems) => {
+      if (prevItems.includes(value.key)) {
+        return prevItems.filter((item) => item !== value.key);
+      } else {
+        return [...prevItems, value.key];
+      }
+    });
   };
 
   const handleParentCheckbox = (parentId) => {
@@ -40,13 +45,11 @@ const Sidemenu = () => {
     } else {
       setAttributeData([...attributeData, data]);
     }
-  
-    // Check if all child checkboxes are checked
+
     const allChildChecked = Data.find((item) => item.nodes[0]?.nodes?.some((child) => child.id === data))?.nodes[0]?.nodes?.every(
       (child) => checkedItems[child.id]
     );
-  
-    // Toggle the state of the parent checkbox
+
     const parentId = Data.find((item) => item.nodes[0]?.nodes?.some((child) => child.id === data))?.id;
     if (parentId) {
       if (allChildChecked) {
@@ -58,30 +61,28 @@ const Sidemenu = () => {
     }
   };
 
-  const handleAll = (data) => {
+  const handleAll = (data, e) => {
+    e.stopPropagation(); // Stop event propagation to prevent accordion open/close
+
     if (checkedItems[data]) {
-      // If item is already checked, remove it from checkedItems
       const { [data]: _, ...rest } = checkedItems;
       setCheckedItems(rest);
     } else {
-      // If item is not checked, add it to checkedItems
       setCheckedItems({ ...checkedItems, [data]: true });
     }
 
-    // Check if all child checkboxes are checked
     const allChildChecked = Data.find((item) => item.id === data)?.nodes[0]?.nodes?.every(
       (child) => checkedItems[child.id]
     );
 
-    // Toggle the state of the parent checkbox
     if (allChildChecked) {
       handleParentCheckbox(data);
     }
   };
 
   const addData = (newData) => {
-    const filteredData = newData.filter((item) => !attributeData.includes(item));
-    setAttributeData([...attributeData, ...filteredData]);
+    const filteredData = newData?.filter((item) => !attributeData.includes(item));
+    setAttributeData([...attributeData, filteredData]);
   };
 
   return (
@@ -89,25 +90,23 @@ const Sidemenu = () => {
       <div className=''>
         <nav
           id="sidenav-1"
-          className="absolute left-0 top-0 z-[1035] h-full w-[300px] overflow-hidden bg-[#070926] shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] dark:bg-zinc-800"
+          className="absolute left-0 top-0 z-[1035] h-full w-[300px] overflow-hidden bg-[#070926] shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)]"
         >
-          <ul
-            className="relative m-0"
-          >
+          <div className='text-white bg-[#141731] h-[48px] font-semibold flex justify-center pr-9 items-center gap-3'> <AiOutlineAreaChart className='text-[24px]' /> Statistics</div>
+
+          <ul className="relative m-0 flex flex-col ">
             {Data?.map((items, index) => {
-              const isChecked = checkedItems[items.id]; 
+              const isChecked = checkedItems[items.id];
+              const isActive = activeItems.includes(items.key);
 
               return (
-                <li className="relative" onClick={() => {
-                  setOpen(true)
-                  setSelected(items.key)
-                }} key={items.key}>
+                <li className={`relative border-b border-[#383b53] bg-[#0d1331] ${isActive ? 'active' : ''}`} onClick={() => handleOpenURL(items)} key={items.key}>
                   <a
                     className="h-12 flex gap-3 cursor-pointer items-center truncate  px-6 py-3 text-base text-white outline-none transition duration-300 ease-linear hover:bg-[#3ca3dc] hover:text-white hover:outline-none"
                   >
-                    <input type="checkbox" id="test1" className='relative z-50 opacity-0 cursor-pointer' checked={isChecked} onChange={() => {
-                      handleAll(items.id);
-                      const details = items.nodes[0].nodes.map((detail) => detail?.id);
+                    <input type="checkbox" id="test1" className='relative z-50 opacity-0 cursor-pointer' checked={isChecked} onChange={(e) => {
+                      handleAll(items.id, e); // Pass event as an argument
+                      const details = items?.nodes[0].nodes?.map((detail) => detail?.id);
                       if (checkedItems[items.id]) {
                         const filteredAttributeData = attributeData.filter((value) =>
                           details.includes(value)
@@ -123,42 +122,92 @@ const Sidemenu = () => {
 
                     <label className='w-full cursor-pointer'>{items.label}</label>
                     <span
-                      className={`${open === true && selected === items.key ? "rotate-180" : null} absolute right-0 ml-auto mr-[0.8rem] transition-transform duration-300`}
+                      className={`${isActive ? "rotate-180" : ''} absolute right-0 ml-auto mr-[0.8rem] transition-transform duration-300`}
                     >
                       <Arrow />
                     </span>
                   </a>
-                  <ul
-                    className={`${open === true && selected === items.key ? "block" : "hidden"} relative m-0 p-0 list-disc list-style-position: outside`}
-                  >
-                    {items?.nodes[0]?.nodes?.map((value, index) => {
+                  <ul className={`${isActive ? "block" : "hidden"} relative m-0 p-0 list-disc list-style-position: outside`}>
+                    {items?.nodes[0]?.test?.map((value, index) => {
                       const isChecked = attributeData?.some((data) => data === value.id);
-                      return (
-                        <li className="relative" key={value.id}>
-                          <a
-                            className="h-12 flex gap-3 cursor-pointer items-center truncate  px-6 py-3 text-base text-white outline-none transition duration-300 ease-linear hover:bg-[#3ca3dc] hover:text-white hover:outline-none pl-[3.1rem] relative submenu"
-                            onClick={(e) => handleOpenURL(value)}
-                          >
-                            <input type="checkbox" id={value.id} className='z-50 opacity-0 cursor-pointer' value={value.id}
-                              checked={isChecked}
-                              onChange={() => {
-                                handleValues(value?.id)
-                              }} />
 
-                            <label className='w-full cursor-pointer' htmlFor={value.id}>{value?.label}</label>
-                            {value?.length > 0 ?
-                              <span
-                                className="absolute right-0 ml-auto mr-[0.8rem] transition-transform duration-300 "
+                      return (
+                        <>
+                          <li className="relative" key={value.id}>
+                            <div className=''>
+                              <a
+                                className="h-12 flex gap-3 cursor-pointer items-center truncate  px-6 py-3 text-base text-white outline-none transition duration-300 ease-linear hover:bg-[#3ca3dc] hover:text-white hover:outline-none pl-[3.1rem] relative submenu"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Stop event propagation to prevent accordion open/close
+                                  handleOpenURL(value);
+                                }}
                               >
-                                <Arrow />
-                              </span> : null}
-                          </a>
-                        </li>
-                      )
+                                <div className='relative'>
+                                  <input
+                                    type="checkbox"
+                                    id={value.id}
+                                    className='z-50 opacity-0 cursor-pointer'
+                                    value={value.id}
+                                    checked={isChecked}
+                                    onChange={() => {
+                                      handleValues(value?.id);
+                                    }}
+                                  />
+                                  <label className='w-full cursor-pointer' htmlFor={value.id}>{value?.label}</label>
+                                </div>
+                                {value?.length > 0 ? (
+                                  <span className="absolute right-0 ml-auto mr-[0.8rem] transition-transform duration-300 ">
+                                    <Arrow />
+                                  </span>
+                                ) : null}
+                              </a>
+                            </div>
+                          </li>
+                          {value?.child?.map((value, index) => {
+                            const isChecked = attributeData?.some((data) => data === value.id);
+
+                            return (
+                              <li className="relative petamenu" key={value.id}>
+                                <div className=''>
+                                  <a
+                                    className="h-12 flex gap-3 cursor-pointer items-center truncate  px-6 py-3 text-base text-white outline-none transition duration-300 ease-linear hover:bg-[#3ca3dc] hover:text-white hover:outline-none pl-[4.1rem] relative submenu"
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // Stop event propagation to prevent accordion open/close
+                                      handleOpenURL(value);
+                                    }}
+                                  >
+                                    <div className='relative'>
+                                      <input
+                                        type="checkbox"
+                                        id={value.id}
+                                        className='z-50 opacity-0 cursor-pointer'
+                                        value={value.id}
+                                        checked={isChecked}
+                                        onChange={() => {
+                                          handleValues(value?.id);
+                                        }}
+                                      />
+
+                                      <label className='w-full cursor-pointer' htmlFor={value.id}>{value?.label}</label>
+                                    </div>
+                                    {value?.length > 0 ? (
+                                      <span className="absolute right-0 ml-auto mr-[0.8rem] transition-transform duration-300 ">
+                                        <Arrow />
+                                      </span>
+                                    ) : null}
+                                  </a>
+                                </div>
+                              </li>
+
+                            );
+                          })}
+                        </>
+
+                      );
                     })}
                   </ul>
                 </li>
-              )
+              );
             })}
           </ul>
         </nav>
@@ -167,8 +216,7 @@ const Sidemenu = () => {
         </div>
       </div>
     </>
+  );
+};
 
-  )
-}
-
-export default Sidemenu
+export default Sidemenu;
